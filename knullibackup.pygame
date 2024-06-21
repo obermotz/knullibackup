@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+import pygame
+import pygame.freetype
+import os
+import sys
+import time
+import datetime
+import settings
+
+
+### Global parameters
+WINDOW_SURFACE   = pygame.HWSURFACE|pygame.DOUBLEBUF
+FONT             = None
+FONT_SIZE        = 30
+SCREEN           = None
+JOYSTICKS        = [ None, None, None, None ]
+TEXTLINE         = 1
+
+def logger(sMessage):
+    #sDatum = datumka()
+    print_text("-- "+sMessage)
+
+def datumka(lCsupasz = False, lUS = False):
+    ido = time.time()
+    dDatum = datetime.datetime.fromtimestamp(ido)
+    if lCsupasz:
+        sDatumka = dDatum.strftime("%Y%m%d-%H%M%S")
+    else:
+        if lUS:
+            sDatumka = dDatum.strftime("%m/%d/%Y %H:%M:%S")
+        else:
+            sDatumka = dDatum.strftime("%Y.%m.%d %H:%M:%S")
+    return sDatumka
+
+def print_text(text):
+    global FONT
+    global FONT_SIZE
+    global SCREEN
+    global TEXTLINE
+
+    if TEXTLINE == 0:
+       HOZZA = 0
+    else:
+       HOZZA = 5
+    IMG = FONT.render(text, True, (255, 255, 255))
+    SCREEN.blit(IMG, (10, (TEXTLINE-1)*FONT_SIZE+HOZZA))
+    pygame.display.flip()
+    TEXTLINE = TEXTLINE+1
+
+#######################################
+### Main Loop
+def main():
+    global FONT
+    global FONT_SIZE
+    global SCREEN
+    global JOYSTICKS
+    global TEXTLINE
+    
+
+    TARGZFILE = settings.TARGZPREFIX+datumka(True)+".tar.gz"
+    TARGZ = settings.TARGZDIR+"/"+TARGZFILE
+
+    infoObject = pygame.display.Info()
+    SCREEN = pygame.display.set_mode((infoObject.current_w, infoObject.current_h), WINDOW_SURFACE)
+
+    pygame.joystick.init()
+    njoy = pygame.joystick.get_count()
+    for i in range(njoy):
+        JOYSTICKS[i] = pygame.joystick.Joystick(i)
+        JOYSTICKS[i].init()
+    FPS = 30
+
+    pygame.font.init()
+    FONT = pygame.font.SysFont("dejavusansmono", 30)
+    TEXTLINE = 1
+    SCREEN.fill((0, 0, 100))
+
+    print_text("Backing up "+settings.BACKUPDIR)
+    print_text("")
+    logger("using "+TARGZ)
+    logger("creating archive")
+    os.system("tar zcfh "+TARGZ+" "+settings.BACKUPDIR)
+
+    if settings.SCPENABLE:
+        logger("sending to "+settings.SCPTARGET+" via SCP")
+        RETCODE = os.system("timeout 15s scp -i "+settings.SCPKEY+" "+TARGZ+" "+settings.SCPTARGET)
+        if RETCODE != 0:
+            logger("SCP to "+settings.SCPTARGET+ " failed !!!")
+    if settings.SMBENABLE:
+        logger("copying to "+settings.SMBSHARE+"/"+settings.SMBDIRECTORY+" using SMB")
+        RETCODE = os.system("smbclient --user='obermotz%Leondong9' -c 'lcd "+settings.TARGZDIR+"; put "+TARGZFILE+"' '"+settings.SMBSHARE+"' --directory '"+settings.SMBDIRECTORY+"'")
+        if RETCODE != 0:
+            logger("SMB file transfer failied !!!")
+    logger("cleanup")
+    os.system("rm "+TARGZ)
+    logger("done")
+    print_text("")
+    print_text("Press [Hotkey]+[START] to quit")
+
+    lRunning = True
+    while lRunning:
+        events = pygame.event.get(pump=True)
+        for e in events:
+            if e.type == pygame.QUIT:
+                lRunning = False
+            try:
+                if JOYSTICKS[0] and JOYSTICKS[0].get_button(12) and JOYSTICKS[0].get_button(17):
+                    lRunning = False
+            except:
+                pass
+
+if __name__ == '__main__':
+    pygame.init()
+    settings.init()
+    main()
