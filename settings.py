@@ -22,16 +22,16 @@ def init():
 
     # SMB specific stuff
     SMBENABLE=True
-    SMBUSER="obermotz"
-    SMBPASSWORD="Leondong9"
-    SMBSHARE="//192.168.1.13/homes"
-    SMBDIRECTORY="backup/Knulli"
+    SMBUSER="username"
+    SMBPASSWORD="password"
+    SMBSHARE="//192.168.1.200/fileshare"
+    SMBDIRECTORY="backup/directory"
 
     # SFTP specific stuff
     SCPENABLE=False
     # create the necessary key by executing this command from a command shell on your device:
     # dropbearkey -t ed25519 -f ~/.ssh/id_dropbear
-    # don't forget to add the public key to the authorized_keys file on your server !
+    # don't forget to add the public key to the authorized_keys file on your server!
     SCPKEY="~/.ssh/dropbear"
     # this is the SCP target, including the username, server name/IP and the backup target directory
-    SCPTARGET="obermotz@192.168.1.13:~/backup/Knulli"
+    SCPTARGET="username@192.168.1.200:/backup/directory"
